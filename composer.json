@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "name": "wumvi/core.http",
+  "description": "Base http framework",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Core\\Http\\": "src"
+    }
+  },
+  "require": {
+    "php": "~7.1",
+    "twig/twig": "@stable",
+    "symfony/yaml": "@stable",
+    "wumvi/core.model": "@stable"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "*",
+    "squizlabs/php_codesniffer": "*"
+  },
+  "config": {
+    "secure-http": false
+  },
+  "authors": [
+    {
+      "name": "Kozlenko Vitaliy",
+      "role": "Developer"
+    }
+  ],
+  "scripts": {
+    "phpstan": [
+      "vendor/bin/phpstan analyze --level=7 src -c phpstan.neon"
+    ],
+    "phpunit": [
+      "vendor/bin/phpunit"
+    ],
+    "test": [
+      "@phpstan",
+      "@phpunit"
+    ]
+  }
+}

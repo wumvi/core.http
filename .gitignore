@@ -1,0 +1,8 @@
+/nbproject
+/.idea
+/node_modules
+/vendor
+/composer.lock
+/test/
+/data/
+/cache/

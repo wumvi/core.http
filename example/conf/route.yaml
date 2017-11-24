@@ -1,0 +1,12 @@
+vars:
+  good-name: ([^/]+)
+
+# Страница Homepage
+index:
+  controller: \Site\Route\Home\Controller\IndexController::indexAction
+  regexp:
+
+# Теститовая страница
+test:
+  controller: \Site\Route\Home\Controller\IndexController::testAction
+  regexp: /test/
