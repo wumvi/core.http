@@ -14,7 +14,7 @@ class RequestHttp
      * Возвращает GET переменную
      *
      * @param string $name название переменной
-     * @param mixed $default значение по умолчанию, если переменной нет
+     * @param string $default значение по умолчанию, если переменной нет
      *
      * @return string Значение переменной
      */

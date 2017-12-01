@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Core\Http;
 
 use Core\Http\Di\Di;
+use Core\Http\Di\Exception\DiException;
+use Core\Http\Exception\RouteException;
 use Core\Http\Http\Exception\Error4xx;
 use Core\Http\Http\Exception\Error4xx as Error4xxException;
 use Core\Http\Http\Response\Error4xx as Error4xxResponse;
@@ -29,21 +31,39 @@ abstract class RootController implements MinimalControllerInterface
     private $di = null;
 
     /**
+     * @var string
+     */
+    private $routeName;
+
+    /**
      * Constructor.
      *
      * @param string $routeName
-     * @param Init   $init
+     * @param Init $init
      * @param string $runMode Режим запуска
      */
     public function __construct(string $routeName, Init $init, string $runMode)
     {
         $this->init = $init;
         $this->runMode = $runMode;
+        $this->routeName = $routeName;
     }
 
+    /**
+     * @return string
+     */
+    public function getRouteName(): string
+    {
+        return $this->routeName;
+    }
+
+    /**
+     * @return Di
+     * @throws DiException
+     */
     public function getDi(): Di
     {
-        if ($this->di) {
+        if ($this->di === null) {
             $this->di = new Di();
             $confFilename = sprintf('conf/di-%s.yaml', $this->runMode);
             $this->di->initDi($confFilename, $this->init->getSettings(), $this->runMode);
@@ -64,7 +84,7 @@ abstract class RootController implements MinimalControllerInterface
 
     /**
      * @param string $method
-     * @param array  $matches
+     * @param array $matches
      *
      * @return mixed
      */
@@ -81,8 +101,8 @@ abstract class RootController implements MinimalControllerInterface
      * Строим Полный путь из route.yaml
      *
      * @param string $name Название записи из route.yaml
-     * @param array  $variables Переменные для URL
-     * @param array  $query Данные для GET запроса
+     * @param array $variables Переменные для URL
+     * @param array $query Данные для GET запроса
      *
      * @return string URL если запись найдена в route.yaml иначе пустая строка
      * @throws \Exception
@@ -99,21 +119,22 @@ abstract class RootController implements MinimalControllerInterface
      * Строим Url Path из route.yaml
      *
      * @param string $name Название записи из route.yaml
-     * @param array  $variables Переменные для URL
-     * @param array  $query Переменные для GET параметров
+     * @param array $variables Переменные для URL
+     * @param array $query Переменные для GET параметров
      *
      * @return string URL если запись найдена в route.yaml иначе пустая строка
      *
-     * @throws \Exception
+     * @throws RouteException
      */
     public function getRoutePath($name, array $variables = [], array $query = []): string
     {
-        if ($name === Init::ROUTE_FIELD_VARS) {
-            throw new \Exception('Wrong name');
+        if (in_array($name, [Init::ROUTE_FIELD_VARS])) {
+            $msg = vsprintf('Name "%s" is reserved', [$name,]);
+            throw new RouteException($msg, RouteException::NAME_IS_RESERVED);
         }
 
         if (!isset($this->init->getRouteData()[$name])) {
-            throw new \Exception('Route not found');
+            throw new RouteException('Route not found', RouteException::ROUTE_NOT_FOUND);
         }
 
         $urlGetParam = '';
@@ -188,20 +209,21 @@ abstract class RootController implements MinimalControllerInterface
 
     /**
      * @param string $msg
-     * @param int    $code
+     * @param int $code
      *
-     * @throws Error4xx
+     * @throws Error4xxException
      */
     public function invokeError4xx(string $msg = '', int $code = Error4xxResponse::HTTP_CODE_NOT_FOUND): void
     {
-        throw new Error4xxException('Error ' . $code . ' Msg: ' . $msg, $code);
+        $msg = vsprintf('Http %s code', [$code,]);
+        throw new Error4xxException($msg, $code);
     }
 
     /**
      * Редирект на другой URL
      *
      * @param string $url URL для редиректа
-     * @param int    $code Код редиректа. see Redirect::REDIRECT_*
+     * @param int $code Код редиректа. see Redirect::REDIRECT_*
      *
      * @return Redirect;
      */
@@ -216,8 +238,8 @@ abstract class RootController implements MinimalControllerInterface
      * Строим URL из route.yaml
      *
      * @param string $name Название записи из route.yaml
-     * @param array  $variables Переменные для URL
-     * @param int    $code Код редиректа. see Redirect::REDIRECT_*
+     * @param array $variables Переменные для URL
+     * @param int $code Код редиректа. see Redirect::REDIRECT_*
      *
      * @return Redirect
      *
@@ -227,8 +249,7 @@ abstract class RootController implements MinimalControllerInterface
         string $name,
         array $variables = [],
         int $code = Redirect::HTTP_CODE_PERMANENT
-    ): Redirect
-    {
+    ): Redirect {
         $url = $this->getRoutePath($name, $variables);
         header('Location: ' . $url, true, $code);
 

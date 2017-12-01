@@ -46,7 +46,7 @@ class Json extends Response
         $this->requestStatus = $requestStatus;
         $this->errorMsg = $errorMsg;
 
-        $this->addHeader('Content-Type' , 'application/json; charset=utf-8');
+        $this->addHeader('Content-Type', 'application/json; charset=utf-8');
     }
 
     /**

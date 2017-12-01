@@ -47,25 +47,19 @@ class Html extends Response
     private $jsList = [];
 
     /**
-     * @var int Http Статус
-     */
-    private $httpStatus = 0;
-
-    /**
      * Сonstructor.
      *
-     * @param string         $template Имя файла шаблона
-     * @param array          $params Переменные для шаблона
+     * @param string $template Имя файла шаблона
+     * @param array $params Переменные для шаблона
      * @param RootController $controller Контроллер
-     * @param int            $httpStatus Статус ответа
+     * @param int $httpStatus Статус ответа
      */
     public function __construct(
         string $template,
         array $params,
         RootController $controller,
         int $httpStatus = self::HTTP_CODE_OK
-    )
-    {
+    ) {
         $this->template = $template;
         $this->params = $params;
         $this->controller = $controller;
@@ -98,6 +92,7 @@ class Html extends Response
     {
         $this->controller->preRender($this->twig, $this->loader, $this->template, $this->params);
         $template = $this->twig->load($this->template);
+
         return $template->render($this->params);
     }
 
@@ -123,6 +118,7 @@ class Html extends Response
         $url = $this->controller->getRunMode() === Init::DEV_MODE_DEV ? '/res/js/dev/%s.js' : '/res/js/min/%s.js';
         $url = sprintf($url, $assetName);
         $this->jsList[] = $url;
+
         return '<script src="' . $url . '"></script>';
     }
 
@@ -135,9 +131,10 @@ class Html extends Response
      */
     public function assetCss(string $assetName): string
     {
-        $url = '/res/css/site/' . $assetName . '.css';
+        $url = vsprintf('/res/css/site/%s.css', [$assetName,]);
         $this->cssList[] = $url;
-        return '<link rel="stylesheet" href="' . $url . '"/>';
+
+        return vsprintf('<link rel="stylesheet" href="%s"/>', [$url,]);
     }
 
     /**
@@ -150,7 +147,8 @@ class Html extends Response
     public function assetExtCss(string $url): string
     {
         $this->cssList[] = $url;
-        return sprintf('<link rel="stylesheet" href="%s"/>', $url);
+
+        return vsprintf('<link rel="stylesheet" href="%s"/>', [$url,]);
     }
 
     /**
@@ -163,7 +161,8 @@ class Html extends Response
     public function assetExtJs(string $url): string
     {
         $this->jsList[] = $url;
-        return '<script src="' . $url . '"></script>';
+
+        return vsprintf('<script src="%s"></script>', [$url,]);
     }
 
     /**

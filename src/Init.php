@@ -27,10 +27,10 @@ class Init
     const ROUTE_FIELD_AJAX = 'ajax';
     const ROUTE_FIELD_VARS = 'vars';
 
-    /** @var [] */
+    /** @var array */
     private $routeData = [];
 
-    /** @var [] Переменные для автоподстановки в URL */
+    /** @var array Переменные для автоподстановки в URL */
     private $vars = [];
 
     /** @var string Режим запуска */
@@ -76,25 +76,24 @@ class Init
     public function initRoute(string $configFile)
     {
         if (!is_readable($configFile)) {
-            throw new RouteException(vsprintf('File "%s" not found', [$configFile,]));
+            $msg  = vsprintf('File "%s" not found', [$configFile,]);
+            throw new RouteException($msg, RouteException::ERROR_TO_OPEN_FILE);
         }
 
         $this->routeData = Yaml::parse(file_get_contents($configFile));
         if (!$this->routeData) {
-            throw new RouteException('Conf "' . $configFile . '" is bad');
+            $msg = vsprintf('Config "%s" is invalid', [$configFile,]);
+            throw new RouteException($msg, RouteException::CONFIG_INVALID);
         }
 
         $routeData = $this->routeData;
 
         // Если запрос был сделан на главную страницу и такой контроллер есть, то вызываем его
-        if (isset($routeData[self::ROUTE_INDEX_KEY][self::ROUTE_FIELD_CONTROLLER]) && $this->initSettings->getDocumentUri() == '/') {
+        $indexController = $routeData[self::ROUTE_INDEX_KEY][self::ROUTE_FIELD_CONTROLLER] ?? '';
+        if ($indexController !== '' && $this->initSettings->getDocumentUri() == '/') {
             $this->initSafeAjaxRequest($routeData[self::ROUTE_INDEX_KEY][self::ROUTE_FIELD_AJAX] ?? false);
 
-            return $this->makeController(
-                self::ROUTE_INDEX_KEY,
-                $routeData[self::ROUTE_INDEX_KEY][self::ROUTE_FIELD_CONTROLLER],
-                []
-            );
+            return $this->makeController(self::ROUTE_INDEX_KEY, $indexController, []);
         }
 
         unset($routeData[self::ROUTE_INDEX_KEY]);
@@ -109,7 +108,7 @@ class Init
         foreach ($routeData as $routeName => $item) {
             if (!isset($item[self::ROUTE_FIELD_REGEXP]) || !$item[self::ROUTE_FIELD_REGEXP]) {
                 $message = vsprintf('Field regex not found in route "%s"', [$routeName,]);
-                throw new RouteException($message);
+                throw new RouteException($message, RouteException::REGEXP_NOT_FOUND);
             }
 
             $regexp = $item[self::ROUTE_FIELD_REGEXP];
@@ -173,14 +172,16 @@ class Init
     {
         $data = explode('::', $classAndMethod);
         if (count($data) < 2) {
-            throw new RouteException('Bad format ' . $classAndMethod, RouteException::BAD_FORMAT);
+            $msg = vsprintf('Bad format "%s"', [$classAndMethod,]);
+            throw new RouteException($msg, RouteException::BAD_FORMAT);
         }
 
         $controllerName = $data[0];
         $methodName = $data[1];
 
         if (!class_exists($controllerName)) {
-            throw new RouteException(vsprintf('Class "%s" not found', [$controllerName,]));
+            $msg = vsprintf('Class "%s" not found', [$controllerName,]);
+            throw new RouteException($msg, RouteException::CLASS_NOT_FOUND);
         }
 
         /** @var MinimalControllerInterface $controller */
