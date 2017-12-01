@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 namespace Core\Http;
-use Core\Http\Model\FileUpload;
 
 /**
  * Получение переменных и работы с массивами GET или POST
@@ -48,6 +47,7 @@ class RequestHttp
     public function getInt(string $name, int $default = 0): int
     {
         $val = $_GET[$name] ?? $default;
+
         return $val === '' ? $default : (int)$val;
     }
 
@@ -62,20 +62,8 @@ class RequestHttp
     public function postInt(string $name, int $default = 0): int
     {
         $val = $_POST[$name] ?? $default;
-        return $val === '' ? $default : (int)$val;
-    }
 
-    /**
-     * Возвращает POST переменную
-     *
-     * @param string $name Название параметра
-     * @param string $default Значение по умолчанию, если переменной нет
-     *
-     * @return string Значение
-     */
-    public function post(string $name, string $default = ''): string
-    {
-        return $_POST[$name] ?? $default;
+        return $val === '' ? $default : (int)$val;
     }
 
     /**
@@ -101,6 +89,7 @@ class RequestHttp
     public function getVarInt(string $name, int $default = 0): int
     {
         $val = $_GET[$name] ?? ($_POST[$name] ?? $default);
+
         return (int)$val;
     }
 
@@ -148,6 +137,19 @@ class RequestHttp
     }
 
     /**
+     * Возвращает POST переменную
+     *
+     * @param string $name Название параметра
+     * @param string $default Значение по умолчанию, если переменной нет
+     *
+     * @return string Значение
+     */
+    public function post(string $name, string $default = ''): string
+    {
+        return $_POST[$name] ?? $default;
+    }
+
+    /**
      * Возвращает TRUE, если запрос типа POST, иначе FALSE
      *
      * @return bool Post запрос это или нет
@@ -190,13 +192,15 @@ class RequestHttp
     }
 
     /**
-     * Возвращает относительный путь
+     * Возвращает полный URL к указанному Path
      *
-     * @return string Относительный путь
+     * @param string $path Относительный путь
+     *
+     * @return string Абсолютный путь
      */
-    public function getPath(): string
+    public function getAbsolutePath(string $path): string
     {
-        return $_SERVER['DOCUMENT_URI'];
+        return $this->getProtocol() . '://' . $_SERVER['HTTP_HOST'] . $path;
     }
 
     /**
@@ -210,18 +214,6 @@ class RequestHttp
     }
 
     /**
-     * Возвращает полный URL к указанному Path
-     *
-     * @param string $path Относительный путь
-     *
-     * @return string Абсолютный путь
-     */
-    public function getAbsolutePath(string $path): string
-    {
-        return $this->getProtocol() . '://' . $_SERVER['HTTP_HOST'] . $path;
-    }
-
-    /**
      * Возвращает полный канонический URL
      *
      * @return string string Полный канонический URL
@@ -229,6 +221,16 @@ class RequestHttp
     public function getCanonicalUrl(): string
     {
         return $this->getProtocol() . '://' . $_SERVER['HTTP_HOST'] . $this->getPath();
+    }
+
+    /**
+     * Возвращает относительный путь
+     *
+     * @return string Относительный путь
+     */
+    public function getPath(): string
+    {
+        return $_SERVER['DOCUMENT_URI'];
     }
 
     /**
@@ -271,9 +273,9 @@ class RequestHttp
     public function isAjax(): bool
     {
         $request = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+
         return !empty($request) && strtolower($request) === 'xmlhttprequest';
     }
-
 
     /**
      * Возвращает все cookies

@@ -5,22 +5,28 @@ namespace Core\Http;
 
 use Core\Http\Di\Di;
 use Core\Http\Http\Exception\Error4xx;
+use Core\Http\Http\Exception\Error4xx as Error4xxException;
+use Core\Http\Http\Response\Error4xx as Error4xxResponse;
 use Core\Http\Http\Response\Redirect;
-use Core\Http\Http\Response\Response;
 
 /**
  * Абстрактный базовй класс контроллера
  */
-abstract class RootController extends Di
+abstract class RootController implements MinimalControllerInterface
 {
-    /** @var string */
-    private $baseDir = '';
-
     /** @var Init */
     protected $init;
 
+    /** @var string */
+    private $baseDir = '';
+
     /** @var string Режим запуска */
     private $runMode;
+
+    /**
+     * @var Di|null
+     */
+    private $di = null;
 
     /**
      * Constructor.
@@ -29,10 +35,21 @@ abstract class RootController extends Di
      * @param Init   $init
      * @param string $runMode Режим запуска
      */
-    public function __construct($routeName, Init $init, string $runMode)
+    public function __construct(string $routeName, Init $init, string $runMode)
     {
         $this->init = $init;
         $this->runMode = $runMode;
+    }
+
+    public function getDi(): Di
+    {
+        if ($this->di) {
+            $this->di = new Di();
+            $confFilename = sprintf('conf/di-%s.yaml', $this->runMode);
+            $this->di->initDi($confFilename, $this->init->getSettings(), $this->runMode);
+        }
+
+        return $this->di;
     }
 
     /**
@@ -54,7 +71,28 @@ abstract class RootController extends Di
     public function run(string $method, array $matches)
     {
         $this->preCallAction($method);
+
         return call_user_func_array([$this, $method], $matches);
+    }
+
+    abstract protected function preCallAction(string $method): void;
+
+    /**
+     * Строим Полный путь из route.yaml
+     *
+     * @param string $name Название записи из route.yaml
+     * @param array  $variables Переменные для URL
+     * @param array  $query Данные для GET запроса
+     *
+     * @return string URL если запись найдена в route.yaml иначе пустая строка
+     * @throws \Exception
+     */
+    public function getAbsoluteUrl($name, array $variables = [], $query = []): string
+    {
+        $request = new RequestHttp();
+        $path = $this->getRoutePath($name, $variables, $query);
+
+        return $request->getAbsolutePath($path);
     }
 
     /**
@@ -65,11 +103,17 @@ abstract class RootController extends Di
      * @param array  $query Переменные для GET параметров
      *
      * @return string URL если запись найдена в route.yaml иначе пустая строка
+     *
+     * @throws \Exception
      */
     public function getRoutePath($name, array $variables = [], array $query = []): string
     {
+        if ($name === Init::ROUTE_FIELD_VARS) {
+            throw new \Exception('Wrong name');
+        }
+
         if (!isset($this->init->getRouteData()[$name])) {
-            return '#no-in-route';
+            throw new \Exception('Route not found');
         }
 
         $urlGetParam = '';
@@ -88,31 +132,6 @@ abstract class RootController extends Di
         }
 
         return trim($url, ' ^$') . $urlGetParam;
-    }
-
-    /**
-     * Строим Полный путь из route.yaml
-     *
-     * @param string $name Название записи из route.yaml
-     * @param array  $variables Переменные для URL
-     * @param array  $query Данные для GET запроса
-     *
-     * @return string URL если запись найдена в route.yaml иначе пустая строка
-     */
-    public function getAbsoluteUrl($name, array $variables = [], $query = []): string
-    {
-        $request = new RequestHttp();
-        $path = $this->getRoutePath($name, $variables, $query);
-
-        return $request->getAbsolutePath($path);
-    }
-
-    /**
-     * @param string $baseDir
-     */
-    public function setBaseDir(string $baseDir): void
-    {
-        $this->baseDir = $baseDir;
     }
 
     /**
@@ -137,6 +156,14 @@ abstract class RootController extends Di
     public function getBaseDir(): string
     {
         return $this->baseDir;
+    }
+
+    /**
+     * @param string $baseDir
+     */
+    public function setBaseDir(string $baseDir): void
+    {
+        $this->baseDir = $baseDir;
     }
 
     /**
@@ -165,20 +192,20 @@ abstract class RootController extends Di
      *
      * @throws Error4xx
      */
-    public function invokeError4xx(string $msg = '', int $code = Response::HTTP_STATUS_NOT_FOUND): void
+    public function invokeError4xx(string $msg = '', int $code = Error4xxResponse::HTTP_CODE_NOT_FOUND): void
     {
-        throw new Error4xx('Error ' . $code . ' Msg: ' . $msg, $code);
+        throw new Error4xxException('Error ' . $code . ' Msg: ' . $msg, $code);
     }
 
     /**
      * Редирект на другой URL
      *
      * @param string $url URL для редиректа
-     * @param int    $code Код редиректа. see Response::REDIRECT_*
+     * @param int    $code Код редиректа. see Redirect::REDIRECT_*
      *
      * @return Redirect;
      */
-    public function redirectToUrl(string $url, int $code = Response::HTTP_STATUS_REDIRECT_PERMANENT): Redirect
+    public function redirectToUrl(string $url, int $code = Error4xxResponse::HTTP_CODE_NOT_FOUND): Redirect
     {
         header('Location: ' . $url, true, $code);
 
@@ -190,14 +217,16 @@ abstract class RootController extends Di
      *
      * @param string $name Название записи из route.yaml
      * @param array  $variables Переменные для URL
-     * @param int    $code Код редиректа. see Response::REDIRECT_*
+     * @param int    $code Код редиректа. see Redirect::REDIRECT_*
      *
      * @return Redirect
+     *
+     * @throws \Exception
      */
     public function redirectToRoute(
         string $name,
         array $variables = [],
-        int $code = Response::HTTP_STATUS_REDIRECT_PERMANENT
+        int $code = Redirect::HTTP_CODE_PERMANENT
     ): Redirect
     {
         $url = $this->getRoutePath($name, $variables);
@@ -208,10 +237,7 @@ abstract class RootController extends Di
 
     public function initRender(\Twig_Environment $twig): void
     {
-        // Получаем абсолютного пути
         $twig->addFunction(new \Twig_SimpleFunction('url', [$this, 'getAbsoluteUrl']));
-
-        // Получение пути из route.yaml
         $twig->addFunction(new \Twig_SimpleFunction('route', [$this, 'getRoutePath']));
     }
 
@@ -221,6 +247,4 @@ abstract class RootController extends Di
         string &$template,
         array &$variables
     ): void;
-
-    abstract protected function preCallAction(string $method): void;
 }

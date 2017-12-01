@@ -1,0 +1,61 @@
+vars:
+  global-vars: (global)
+
+# Страница Homepage
+index:
+  controller: \Assert\TestController::indexAction
+  regexp:
+
+# Теститовая страница
+test:
+  controller: \Assert\TestController::testAction
+  regexp: /test/
+
+ajax:
+  controller: \Assert\TestController::ajaxAction
+  regexp: /ajax/
+  ajax: true
+
+with_local_vars:
+  controller: \Assert\TestController::localVarAction
+  regexp: /vars/{local-var}/
+  vars:
+    local-var: 'local'
+
+with_global_vars:
+  controller: \Assert\TestController::globalVarAction
+  regexp: /vars/{name}/
+  vars:
+    name: '@global-vars'
+
+with_regexp:
+  controller: \Assert\TestController::regexpAction
+  regexp: /regexp/{number}/
+  vars:
+    number: '\d+'
+
+wrong_controller:
+  controller: \Assert\WrongController::badAction
+  regexp: /wrong-controller/
+
+wrong_method:
+  controller: \Assert\TestController::badAction
+  regexp: /wrong-method/
+
+var_not_found:
+  controller: \Assert\TestController::indexAction
+  regexp: /var-not-found/{var-not-found}/
+
+var_memory:
+  controller: \Assert\TestController::memoryVarAction
+  regexp: /var_memory/{data}/
+  vars:
+    data: '(\w+)'
+
+without-method:
+  controller: \Assert\TestController
+  regexp: /without-method/
+
+with-wrong-interface:
+  controller: \Assert\WrongInterfaceController::methodAction
+  regexp: /with-wrong-interface/

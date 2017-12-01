@@ -1,8 +1,0 @@
-'class':
-  example.dao:
-    class: \Site\Group\Dao\GroupDao
-    param: '@db'
-
-  example.service:
-    class: \Site\Group\Service\GroupService
-    param: '@example.dao'

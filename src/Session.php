@@ -1,10 +1,25 @@
 <?php
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Core\Http;
 
 trait Session
 {
+    /**
+     * Устанавливаем переменнную сессии
+     *
+     * @param string $name Имя сессии
+     * @param mixed $value Значение сессии
+     *
+     * @throws \Exception Если сессия не установилась
+     */
+    public function setSession($name, $value)
+    {
+        $this->initSession();
+
+        $_SESSION[$name] = $value;
+    }
+
     /**
      * Инициализируем сессиию
      *
@@ -19,21 +34,6 @@ trait Session
         if (!session_start()) {
             throw new \Exception('Session not start');
         }
-    }
-
-    /**
-     * Устанавливаем переменнную сессии
-     *
-     * @param string $name Имя сессии
-     * @param mixed $value Значение сессии
-     *
-     * @throws \Exception Если сессия не установилась
-     */
-    public function setSession($name, $value)
-    {
-        $this->initSession();
-
-        $_SESSION[$name] = $value;
     }
 
     /**

@@ -1,0 +1,6 @@
+vars:
+  global-vars: (global)
+
+index:
+  controller: \Assert\TestController::indexAction
+  regexp:

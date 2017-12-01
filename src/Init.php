@@ -1,11 +1,12 @@
 <?php
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Core\Http;
 
-use Core\Http\Http\Exception\Error4xx;
+use Core\Http\Exception\RouteException;
+use Core\Http\Http\Exception\Error4xx as Error4xxException;
+use Core\Http\Http\Response\Error4xx as Error4xxResponse;
 use Symfony\Component\Yaml\Yaml;
-use Core\Http\Http\Response\Response;
 
 /**
  * Первичная инициализация
@@ -17,6 +18,14 @@ class Init
 
     /** @const Запуск на продакшене */
     const DEV_MODE_PROD = 'prod';
+
+    const ROUTE_INDEX_KEY = 'index';
+
+    const ROUTE_FIELD_CONTROLLER = 'controller';
+
+    const ROUTE_FIELD_REGEXP = 'regexp';
+    const ROUTE_FIELD_AJAX = 'ajax';
+    const ROUTE_FIELD_VARS = 'vars';
 
     /** @var [] */
     private $routeData = [];
@@ -45,63 +54,14 @@ class Init
     /**
      * @return array
      */
-    public function getRouteData() : array
+    public function getRouteData(): array
     {
         return $this->routeData;
     }
 
-    /**
-     * @param string $name
-     * @param string $classAndMethod
-     * @param $matches
-     * @return mixed
-     * @throws \Exception
-     */
-    public function makeController(string $name, string $classAndMethod, array $matches)
+    public function getSettings(): InitSettings
     {
-        $data = explode('::', $classAndMethod);
-        if (count($data) < 2) {
-            throw new \Exception('Bad format ' . $classAndMethod . '  #bad-format-init');
-        }
-
-        /** @var RootController $controller */
-        $controller = new $data[0]($name, $this, $this->runMode);
-        $confFilename = sprintf('conf/di-%s.yaml', $this->runMode);
-        $controller->initDi($confFilename, $this->initSettings, $this->runMode);
-        $controller->setBaseDir($this->initSettings->getSiteRoot());
-
-        if (!$controller) {
-            throw new \Exception('Controller from ' . $classAndMethod . ' not found #cntrl-not-found-init');
-        }
-
-        $methodName = $data[1];
-        unset($data);
-
-        if (!method_exists($controller, $methodName)) {
-            throw new \Exception('Method ' . $methodName . ' in ' . $classAndMethod .
-                ' not found #method-not-found-init');
-        }
-
-        return $controller->run($methodName, $matches);
-    }
-
-    /**
-     * Защищает от вызова ajax запросов с других сайтов
-     *
-     * @param bool $isCheckAjax Проверять ли на ajax запрос
-     *
-     * @throws Error4xx
-     */
-    private function initSafeAjaxRequest(bool $isCheckAjax): void
-    {
-        if (!$isCheckAjax) {
-            return;
-        }
-
-        $request = new RequestHttp();
-        if (!$request->isPost() || !$request->isAjax()) {
-            throw new Error4xx('Support only ajax and post request', Response::HTTP_STATUS_BAD_REQUEST);
-        }
+        return $this->initSettings;
     }
 
     /**
@@ -109,44 +69,58 @@ class Init
      *
      * @return mixed
      *
-     * @throws Error4xx
+     * @throws Error4xxException
+     * @throws RouteException
      * @throws \Exception
      */
     public function initRoute(string $configFile)
     {
+        if (!is_readable($configFile)) {
+            throw new RouteException(vsprintf('File "%s" not found', [$configFile,]));
+        }
+
         $this->routeData = Yaml::parse(file_get_contents($configFile));
         if (!$this->routeData) {
-            throw new \Exception('Conf "' . $configFile . '" is bad #bad-json-conf-init');
+            throw new RouteException('Conf "' . $configFile . '" is bad');
         }
+
+        $routeData = $this->routeData;
 
         // Если запрос был сделан на главную страницу и такой контроллер есть, то вызываем его
-        if (isset($this->routeData['index']['controller']) && $this->initSettings->getDocumentUri() == '/') {
-            $this->initSafeAjaxRequest($this->routeData['index']['ajax'] ?? false);
-            return $this->makeController('index', $this->routeData['index']['controller'], []);
+        if (isset($routeData[self::ROUTE_INDEX_KEY][self::ROUTE_FIELD_CONTROLLER]) && $this->initSettings->getDocumentUri() == '/') {
+            $this->initSafeAjaxRequest($routeData[self::ROUTE_INDEX_KEY][self::ROUTE_FIELD_AJAX] ?? false);
+
+            return $this->makeController(
+                self::ROUTE_INDEX_KEY,
+                $routeData[self::ROUTE_INDEX_KEY][self::ROUTE_FIELD_CONTROLLER],
+                []
+            );
         }
 
-        unset($this->routeData['index']);
+        unset($routeData[self::ROUTE_INDEX_KEY]);
 
         $this->vars = [];
-        if (isset($this->routeData['vars'])) {
-            $this->vars = $this->routeData['vars'];
-            unset($this->routeData['vars']);
+        if (isset($routeData[self::ROUTE_FIELD_VARS])) {
+            $this->vars = $routeData[self::ROUTE_FIELD_VARS];
+            unset($routeData[self::ROUTE_FIELD_VARS]);
         }
 
         // Иначем бегаем по всем роутингам и ищем подходящий
-        foreach ($this->routeData as $routeName => $item) {
-            if (!isset($item['regexp']) || !$item['regexp']) {
-                throw new \Exception('Regexp not set in ' . $routeName);
+        foreach ($routeData as $routeName => $item) {
+            if (!isset($item[self::ROUTE_FIELD_REGEXP]) || !$item[self::ROUTE_FIELD_REGEXP]) {
+                $message = vsprintf('Field regex not found in route "%s"', [$routeName,]);
+                throw new RouteException($message);
             }
 
-            $regexp = $item['regexp'];
+            $regexp = $item[self::ROUTE_FIELD_REGEXP];
 
-            if (isset($item['vars'])) {
-                foreach ($item['vars'] as $varName => $varVal) {
-                    if ($varVal[0] == '@') {
+            if (isset($item[self::ROUTE_FIELD_VARS])) {
+                foreach ($item[self::ROUTE_FIELD_VARS] as $varName => $varVal) {
+                    if ($varVal[0] === '@') {
                         $globalVarName = substr($varVal, 1);
                         if (!isset($this->vars[$globalVarName])) {
-                            throw new \Exception('Global vars \'' . $globalVarName . '\' not found');
+                            $message = vsprintf('Global var "%s" not found', [$globalVarName,]);
+                            throw new RouteException($message, RouteException::GLOBAL_VAR_NOT_FOUND);
                         }
                         $varVal = $this->vars[$globalVarName];
                     }
@@ -156,12 +130,76 @@ class Init
             }
 
             if (preg_match('#' . $regexp . '#', $this->initSettings->getDocumentUri(), $matches)) {
-                $this->initSafeAjaxRequest($item['ajax'] ?? false);
-                return $this->makeController($routeName, $item['controller'], $matches);
+                $this->initSafeAjaxRequest($item[self::ROUTE_FIELD_AJAX] ?? false);
+
+                return $this->makeController($routeName, $item[self::ROUTE_FIELD_CONTROLLER], $matches);
             }
         }
 
         // Вызываем 4xx ошибку
-        throw new Error4xx('Controller not found', Response::HTTP_STATUS_NOT_FOUND);
+        throw new Error4xxException('Controller not found', Error4xxResponse::HTTP_CODE_NOT_FOUND);
+    }
+
+    /**
+     * Защищает от вызова ajax запросов с других сайтов
+     *
+     * @param bool $isCheckAjax Проверять ли на ajax запрос
+     *
+     * @throws Error4xxException
+     */
+    private function initSafeAjaxRequest(bool $isCheckAjax): void
+    {
+        if (!$isCheckAjax) {
+            return;
+        }
+
+        $request = new RequestHttp();
+        if (!$request->isPost() || !$request->isAjax()) {
+            $msg = 'Support only ajax and post request';
+            throw new Error4xxException($msg, Error4xxResponse::HTTP_CODE_BAD_REQUEST);
+        }
+    }
+
+    /**
+     * @param string $name
+     * @param string $classAndMethod
+     * @param array $matches
+     *
+     * @return mixed
+     *
+     * @throws \Exception
+     */
+    private function makeController(string $name, string $classAndMethod, array $matches)
+    {
+        $data = explode('::', $classAndMethod);
+        if (count($data) < 2) {
+            throw new RouteException('Bad format ' . $classAndMethod, RouteException::BAD_FORMAT);
+        }
+
+        $controllerName = $data[0];
+        $methodName = $data[1];
+
+        if (!class_exists($controllerName)) {
+            throw new RouteException(vsprintf('Class "%s" not found', [$controllerName,]));
+        }
+
+        /** @var MinimalControllerInterface $controller */
+        $controller = new $controllerName($name, $this, $this->runMode);
+        if (!($controller instanceof MinimalControllerInterface)) {
+            $msg = 'Controller must be instance of MinimalControllerInterface';
+            throw new RouteException($msg, RouteException::BAD_INTERFACE);
+        }
+
+        //$confFilename = sprintf('conf/di-%s.yaml', $this->runMode);
+        // $controller->initDi($confFilename, $this->initSettings, $this->runMode);
+        $controller->setBaseDir($this->initSettings->getSiteRoot());
+        unset($data);
+
+        if (!method_exists($controller, $methodName)) {
+            $msg = vsprintf('Method "%s" in "%s" not found', [$methodName, $classAndMethod,]);
+            throw new RouteException($msg, RouteException::METHOD_NOT_FOUND);
+        }
+
+        return $controller->run($methodName, $matches);
     }
 }

@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use Core\Http\FileUpload;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \Core\Http\FileUpload

@@ -66,7 +66,8 @@ class Di
     {
         $filename = $initSettings->getSiteRoot() . $diFile;
         if (!is_readable($filename)) {
-            throw new DiException('File "' . $filename .'" not found', DiException::FILE_NOT_FOUND);
+            $msg = vsprintf('File "%s" not found', [$filename,]);
+            throw new DiException($msg, DiException::FILE_NOT_FOUND);
         }
 
         $this->data = Yaml::parse(file_get_contents($filename));
@@ -74,7 +75,8 @@ class Di
         if ($extend) {
             $filename = dirname($filename) . '/' . $extend;
             if (!is_readable($filename)) {
-                throw new DiException('File "' . $filename .'" not found', DiException::FILE_NOT_FOUND);
+                $msg = vsprintf('File "%s" not found', [$filename,]);
+                throw new DiException($msg, DiException::FILE_NOT_FOUND);
             }
 
             $advData = Yaml::parse(file_get_contents($filename));
@@ -98,26 +100,21 @@ class Di
     }
 
     /**
-     * Возвращает ресурс по имени
+     * @param string $name
      *
-     * @param string $name Название ресурса
+     * @return mixed
      *
-     * @return mixed Ресурс
-     *
-     * @throws Exception\DiException
-     *
-     * @
+     * @throws DiException
      */
-    private function parseResRaw(string $name)
+    public function getRes(string $name)
     {
-        if (!array_key_exists($name, $this->data[self::BLOCK_RAW])) {
-            throw new Exception\DiException(
-                'Res ' . $name . ' not found in DI',
-                DiException::RES_DATA_NOT_FOUND
-            );
+        $val = $this->data[self::BLOCK_RAW][$name] ?? null;
+        if ($val === null) {
+            $msg = vsprintf('Res "%s" not found in DI', [$name,]);
+            throw new DiException($msg, DiException::RES_DATA_NOT_FOUND);
         }
 
-        return $this->data[self::BLOCK_RAW][$name];
+        return $val;
     }
 
     /**
@@ -126,10 +123,11 @@ class Di
      * @param mixed $val Значение
      *
      * @return mixed Результат парсинга
+     * @throws DiException
      */
     protected function parse($val)
     {
-        if (!$val) {
+        if (empty($val)) {
             return $val;
         }
 
@@ -147,26 +145,6 @@ class Di
             }
 
             return $param;
-        }
-
-        return $val;
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return mixed
-     *
-     * @throws Exception\DiException
-     */
-    public function getRes(string $name)
-    {
-        $val = $this->data[self::BLOCK_RAW][$name] ?? null;
-        if ($val === null) {
-            throw new Exception\DiException(
-                'Res ' . $name . ' not found in DI',
-                DiException::RES_DATA_NOT_FOUND
-            );
         }
 
         return $val;
@@ -197,31 +175,23 @@ class Di
             return $this->objList[$name];
         }
 
-
-
         // Если имя не найдено
         if (!array_key_exists($name, $this->data[self::BLOCK_CLASS])) {
-            throw new Exception\DiException(
-                'Resource "' . $name . '" not found in DI.yaml',
-                DiException::CLASS_NAME_NOT_FOUND
-            );
+            $msg = vsprintf('Resource "%s" not found in DI.yaml', [$name,]);
+            throw new Exception\DiException($msg, DiException::CLASS_NAME_NOT_FOUND);
         }
 
         // Если это не массив, то это неправильный формат
         if (!is_array($this->data[self::BLOCK_CLASS][$name])) {
-            throw new Exception\DiException(
-                'Name [' . $name . '] is not array DI',
-                DiException::BAD_FORMAT
-            );
+            $msg = vsprintf('Name "%s" is not array DI', [$name,]);
+            throw new Exception\DiException($msg, DiException::BAD_FORMAT);
         }
 
         // получаем class
         $className = $this->data[self::BLOCK_CLASS][$name][self::ATTRIBUTE_CLASS] ?? '';
         if (!$className) {
-            throw new Exception\DiException(
-                'Name [' . $name . '] don\'t have class name',
-                DiException::CLASS_NOT_FOUND
-            );
+            $msg = vsprintf('Name "%s" don\'t have class name', [$name,]);
+            throw new Exception\DiException($msg, DiException::CLASS_NOT_FOUND);
         }
 
         // Парсим параметры для создания
@@ -235,10 +205,28 @@ class Di
             $param = [$param];
         }
 
-        // $this->objList[$name] = new $className(...$param);
         $refClass = new \ReflectionClass($className);
         $this->objList[$name] = $refClass->newInstanceArgs($param);
 
         return $this->objList[$name];
+    }
+
+    /**
+     * Возвращает ресурс по имени
+     *
+     * @param string $name Название ресурса
+     *
+     * @return mixed Ресурс
+     *
+     * @throws DiException
+     */
+    private function parseResRaw(string $name)
+    {
+        if (!array_key_exists($name, $this->data[self::BLOCK_RAW])) {
+            $msg = vsprintf('Res "%s" not found in DI', [$name,]);
+            throw new DiException($msg, DiException::RES_DATA_NOT_FOUND);
+        }
+
+        return $this->data[self::BLOCK_RAW][$name];
     }
 }

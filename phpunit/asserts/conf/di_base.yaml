@@ -1,0 +1,7 @@
+raw:
+  include-raw: 'getme'
+
+class:
+  base-service:
+    class: Core\Http\InitSettings
+    param: []

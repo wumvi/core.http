@@ -1,0 +1,2 @@
+with_out_regexp:
+  controller: \Assert\TestController::badAction

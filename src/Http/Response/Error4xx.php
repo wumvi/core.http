@@ -8,6 +8,18 @@ namespace Core\Http\Http\Response;
  */
 class Error4xx extends Response
 {
+    public const HTTP_CODE_NOT_FOUND = 404;
+
+    /**
+     * Доступ запрещен
+     */
+    public const HTTP_CODE_FORBIDDEN = 403;
+
+    /**
+     * Неверный запрос
+     */
+    public const HTTP_CODE_BAD_REQUEST = 400;
+
     /**
      * @var int Код ошибки
      */
@@ -40,6 +52,6 @@ class Error4xx extends Response
      */
     public function getHttpStatus(): int
     {
-        return 404;
+        return self::HTTP_CODE_NOT_FOUND;
     }
 }

@@ -63,7 +63,7 @@ class Html extends Response
         string $template,
         array $params,
         RootController $controller,
-        int $httpStatus = self::HTTP_STATUS_OK
+        int $httpStatus = self::HTTP_CODE_OK
     )
     {
         $this->template = $template;

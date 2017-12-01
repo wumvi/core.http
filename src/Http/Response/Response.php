@@ -11,42 +11,17 @@ abstract class Response
     /**
      * Все нормаьно
      */
-    public const HTTP_STATUS_OK = 200;
-
-    /**
-     * Доступ запрещен
-     */
-    public const HTTP_STATUS_FORBIDDEN = 403;
-
-    /**
-     * Неверный запрос
-     */
-    public const HTTP_STATUS_BAD_REQUEST = 400;
-
-    /**
-     * Страница не найден
-     */
-    public const HTTP_STATUS_NOT_FOUND = 404;
+    public const HTTP_CODE_OK = 200;
 
     /**
      * Ошибка сервера
      */
-    public const HTTP_STATUS_INTERNAL_ERROR = 500;
-
-    /**
-     * Код http для временного редиректа
-     */
-    public const HTTP_STATUS_REDIRECT_TEMPORARY = 302;
-
-    /**
-     * Код http для постоянного редиректа
-     */
-    public const HTTP_STATUS_REDIRECT_PERMANENT = 301;
+    public const HTTP_CODE_INTERNAL_ERROR = 500;
 
     /**
      * @var int Статус ответа
      */
-    protected $httpStatus = self::HTTP_STATUS_OK;
+    protected $httpStatus = self::HTTP_CODE_OK;
 
     /**
      * @var array
