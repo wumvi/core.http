@@ -80,6 +80,8 @@ class Html extends Response
         $this->twig->addFunction(new \Twig_SimpleFunction('assetExtJs', [$this, 'assetExtJs']));
         $this->twig->addFunction(new \Twig_SimpleFunction('assetExtCss', [$this, 'assetExtCss']));
 
+        $this->controller->initRender($this->twig);
+
         $this->addHeader('Content-Type', 'text/html; charset=utf-8');
     }
 
@@ -115,11 +117,10 @@ class Html extends Response
      */
     public function assetJs(string $assetName): string
     {
-        $url = $this->controller->getRunMode() === Init::DEV_MODE_DEV ? '/res/js/dev/%s.js' : '/res/js/min/%s.js';
-        $url = sprintf($url, $assetName);
+        $url = sprintf('/res/js/%s.js', $assetName);
         $this->jsList[] = $url;
 
-        return '<script src="' . $url . '"></script>';
+        return vsprintf('<script src="%s"></script>', [$url,]);
     }
 
     /**
@@ -131,7 +132,7 @@ class Html extends Response
      */
     public function assetCss(string $assetName): string
     {
-        $url = vsprintf('/res/css/site/%s.css', [$assetName,]);
+        $url = vsprintf('/res/css/%s.css', [$assetName,]);
         $this->cssList[] = $url;
 
         return vsprintf('<link rel="stylesheet" href="%s"/>', [$url,]);
