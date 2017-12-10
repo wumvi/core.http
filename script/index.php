@@ -10,13 +10,11 @@ use Core\Http\InitSettings;
 use Core\Http\Init;
 use \Core\Http\RequestHttp;
 
-include __DIR__ . '../vendor/autoload.php';
+include realpath($_SERVER['SITE_ROOT']) . '/vendor/autoload.php';
 
 $memoryUsage = 0;
 $runMode = $_SERVER['RUN_MODE'] ?? Init::DEV_MODE_DEV;
 if ($runMode) {
-    ini_set('display_errors', 1);
-    error_reporting(E_ALL);
     $memoryUsage = memory_get_usage();
     ini_set('xdebug.show_error_trace', 0);
     ini_set('xdebug.show_exception_trace', 0);
