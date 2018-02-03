@@ -128,7 +128,7 @@ class Init
                 }
             }
 
-            if (preg_match('#' . $regexp . '#', $this->initSettings->getDocumentUri(), $matches)) {
+            if (preg_match('#' . $regexp . '#u', $this->initSettings->getDocumentUri(), $matches)) {
                 $this->initSafeAjaxRequest($item[self::ROUTE_FIELD_AJAX] ?? false);
 
                 return $this->makeController($routeName, $item[self::ROUTE_FIELD_CONTROLLER], $matches);
