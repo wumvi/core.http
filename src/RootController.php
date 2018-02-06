@@ -204,7 +204,7 @@ abstract class RootController implements MinimalControllerInterface
      */
     public function getCacheDir(): string
     {
-        return $this->baseDir . 'cache/';
+        return  '/tmp/cache/' . $this->init->getSettings()->getHttpHost() . '/';
     }
 
     /**
