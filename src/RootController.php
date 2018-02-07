@@ -35,6 +35,8 @@ abstract class RootController implements MinimalControllerInterface
      */
     private $routeName;
 
+    public abstract function getBuildInfo(): string;
+
     /**
      * Constructor.
      *

@@ -117,7 +117,7 @@ class Html extends Response
      */
     public function assetJs(string $assetName): string
     {
-        $url = sprintf('/res/js/%s.js', $assetName);
+        $url = sprintf('/res/js/%s.js?%s', $assetName, $this->controller->getBuildInfo());
         $this->jsList[] = $url;
 
         return vsprintf('<script src="%s"></script>', [$url,]);
@@ -132,7 +132,7 @@ class Html extends Response
      */
     public function assetCss(string $assetName): string
     {
-        $url = vsprintf('/res/css/%s.css', [$assetName,]);
+        $url = vsprintf('/res/css/%s.css?%s', [$assetName, $this->controller->getBuildInfo(),]);
         $this->cssList[] = $url;
 
         return vsprintf('<link rel="stylesheet" href="%s"/>', [$url,]);
@@ -149,7 +149,7 @@ class Html extends Response
     {
         $this->cssList[] = $url;
 
-        return vsprintf('<link rel="stylesheet" href="%s"/>', [$url,]);
+        return vsprintf('<link rel="stylesheet" href="%s?%s"/>', [$url,$this->controller->getBuildInfo(),]);
     }
 
     /**
@@ -163,7 +163,7 @@ class Html extends Response
     {
         $this->jsList[] = $url;
 
-        return vsprintf('<script src="%s"></script>', [$url,]);
+        return vsprintf('<script src="%s?%s"></script>', [$url,$this->controller->getBuildInfo(),]);
     }
 
     /**
