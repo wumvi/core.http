@@ -64,7 +64,7 @@ try {
 
         if (!isset($_COOKIE[session_name()])) {
             foreach ($data->getCssList() as $cssUrl) {
-                header('link: <' . $cssUrl . '>; rel=preload; as=stylesheet', false);
+                header('link: <' . $cssUrl . '>; rel=preload; as=style', false);
             }
 
             foreach ($data->getJsList() as $jsUrl) {
