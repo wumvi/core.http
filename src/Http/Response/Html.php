@@ -112,13 +112,16 @@ class Html extends Response
      * Возвращает HTML код для подключение JS скрипта
      *
      * @param string $assetName Название скрипта
+     * @param bool $isPreload Использовать ли preload header
      *
      * @return string HTML код
      */
-    public function assetJs(string $assetName): string
+    public function assetJs(string $assetName, $isPreload = false): string
     {
         $url = sprintf('/res/js/%s.js?%s', $assetName, $this->controller->getBuildInfo());
-        $this->jsList[] = $url;
+        if ($isPreload) {
+            $this->jsList[] = $url;
+        }
 
         return vsprintf('<script src="%s"></script>', [$url,]);
     }
@@ -127,13 +130,16 @@ class Html extends Response
      * Возвращает HTML код для подключение CSS стиля
      *
      * @param string $assetName Название стиля
+     * @param bool $isPreload Использовать ли preload header
      *
      * @return string HTML код
      */
-    public function assetCss(string $assetName): string
+    public function assetCss(string $assetName, $isPreload = false): string
     {
         $url = vsprintf('/res/css/%s.css?%s', [$assetName, $this->controller->getBuildInfo(),]);
-        $this->cssList[] = $url;
+        if ($isPreload) {
+            $this->cssList[] = $url;
+        }
 
         return vsprintf('<link rel="stylesheet" href="%s"/>', [$url,]);
     }
@@ -142,12 +148,15 @@ class Html extends Response
      * Возвращает HTML код для подключение внешнего CSS стиля
      *
      * @param string $url URL стиля
+     * @param bool $isPreload Использовать ли preload header
      *
      * @return string HTML код
      */
-    public function assetExtCss(string $url): string
+    public function assetExtCss(string $url, $isPreload = false): string
     {
-        $this->cssList[] = $url;
+        if ($isPreload) {
+            $this->cssList[] = $url;
+        }
 
         return vsprintf('<link rel="stylesheet" href="%s?%s"/>', [$url,$this->controller->getBuildInfo(),]);
     }
@@ -156,12 +165,15 @@ class Html extends Response
      * Возвращает HTML код для подключение внешнего JS скрипта
      *
      * @param string $url URL скрипта
+     * @param bool $isPreload Использовать ли preload header
      *
      * @return string HTML код
      */
-    public function assetExtJs(string $url): string
+    public function assetExtJs(string $url, $isPreload = false): string
     {
-        $this->jsList[] = $url;
+        if ($isPreload) {
+            $this->jsList[] = $url;
+        }
 
         return vsprintf('<script src="%s?%s"></script>', [$url,$this->controller->getBuildInfo(),]);
     }
