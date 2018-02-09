@@ -11,6 +11,8 @@ use Core\Http\RootController;
  */
 class Html extends Response
 {
+    const CONTENT_TYPE = 'text/html; charset=utf-8';
+
     /**
      * @var string Имя файла шаблона
      */
@@ -82,7 +84,7 @@ class Html extends Response
 
         $this->controller->initRender($this->twig);
 
-        $this->addHeader('Content-Type', 'text/html; charset=utf-8');
+        $this->addHeader('Content-Type', $this->getContentType());
     }
 
     /**
@@ -196,5 +198,10 @@ class Html extends Response
     public function getJsList(): array
     {
         return $this->jsList;
+    }
+
+    public function getContentType(): string
+    {
+        return self::CONTENT_TYPE;
     }
 }
