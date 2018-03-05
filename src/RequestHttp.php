@@ -299,4 +299,22 @@ class RequestHttp
     {
         return $_COOKIE[$name] ?? $default;
     }
+
+    /**
+     * @return string
+     */
+    public function getReferer(): string
+    {
+        return $_SERVER['HTTP_REFERER'] ?? '';
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return string
+     */
+    public function getHeader(string $name): string
+    {
+        return $_SERVER['HTTP_' . strtoupper($name)] ?? '';
+    }
 }
