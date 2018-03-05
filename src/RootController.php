@@ -146,7 +146,7 @@ abstract class RootController implements MinimalControllerInterface
 
         $item = $this->init->getRouteData()[$name];
         if (!$variables) {
-            return trim($item['regexp'], ' ^$') . $urlGetParam;
+            return trim($item['regexp'] ?? '', ' ^$') . $urlGetParam;
         }
 
         $url = $item['regexp'];
