@@ -93,9 +93,10 @@ try {
 
     exit;
 } catch (\Throwable $t) {
+    http_response_code(500);
+    // To get 500 error, should set ini_set('display_errors', 'Off');
+
     if ($runMode === Init::DEV_MODE_DEV) {
         throw $t;
     }
-
-    header("HTTP/1.1 500 Internal Server Error");
 }
