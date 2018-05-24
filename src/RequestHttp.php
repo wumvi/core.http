@@ -156,7 +156,7 @@ class RequestHttp
      */
     public function isPost(): bool
     {
-        return strlen($_SERVER['REQUEST_METHOD']) === 4;
+        return $_SERVER['REQUEST_METHOD'] === 'POST';
     }
 
     /**
