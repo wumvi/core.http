@@ -252,7 +252,7 @@ class RequestHttp
      */
     public function isAcceptHas(string $accept): bool
     {
-        return strpos($_SERVER['HTTP_ACCEPT'], $accept) !== false;
+        return strpos($_SERVER['HTTP_ACCEPT'] ?? '', $accept) !== false;
     }
 
     /**
